@@ -1,0 +1,13 @@
+# Archivos escaneados de la dieta (no se suben al repo)
+*.pdf
+
+# Editor / SO
+Thumbs.db
+.DS_Store
+
+# Temporales de Node (no aplica, pero por precaución)
+node_modules/
+*.log
+
+# Archivos locales de copia de la app sin uso
+desktop.ini

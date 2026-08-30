@@ -1,0 +1,7 @@
+# Configuración de Netlify para la app estática de la dieta
+[build]
+  publish = "."
+
+# Sin framework de construcción: es HTML/CSS/JS estático puro
+[build.environment]
+  NODE_VERSION = "20"
