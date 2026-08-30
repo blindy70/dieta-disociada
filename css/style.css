@@ -31,6 +31,10 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
 .app-header h1 {
@@ -38,26 +42,67 @@ body {
   font-size: 20px;
 }
 
-.main-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.main-nav button {
-  background: rgba(255,255,255,0.15);
+.home-back {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.18);
   color: #fff;
   border: none;
-  padding: 7px 12px;
-  border-radius: 18px;
-  font-size: 13px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.15s;
 }
+.home-back:hover { background: rgba(255,255,255,0.32); }
+.home-back[hidden] { display: none; }
 
-.main-nav button:hover { background: rgba(255,255,255,0.28); }
-.main-nav button.active { background: #fff; color: var(--primary-dark); font-weight: 600; }
+.view-home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 140px);
+  text-align: center;
+}
+.home-hero h2 { margin: 0 0 4px; font-size: 24px; color: var(--primary-dark); }
+.home-hero .hint { margin: 0 0 24px; }
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  width: 100%;
+  max-width: 720px;
+}
+
+.home-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px 12px;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+.home-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  border-color: var(--primary);
+}
+.home-ico { font-size: 34px; line-height: 1; }
+.home-label { font-size: 14px; font-weight: 600; color: var(--text); }
 
 .app-main {
   max-width: 900px;

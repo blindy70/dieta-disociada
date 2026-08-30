@@ -52,30 +52,24 @@
   // ---------------------------------------------------------------
   // Navegación
   // ---------------------------------------------------------------
-  var VIEWS = ['hoy', 'plan', 'compra', 'alimentos', 'buscador', 'recetas', 'progreso', 'recordatorios', 'notas'];
+  var VIEWS = ['inicio', 'hoy', 'plan', 'compra', 'alimentos', 'buscador', 'recetas', 'progreso', 'recordatorios', 'notas'];
   var NAV = [
-    ['hoy', 'Hoy'],
-    ['plan', 'Planificar'],
-    ['compra', 'Compra'],
-    ['alimentos', 'Alimentos'],
-    ['buscador', 'Buscador'],
-    ['recetas', 'Recetas'],
-    ['progreso', 'Peso'],
-    ['recordatorios', 'Avisos'],
-    ['notas', 'Notas']
+    ['hoy', 'Hoy', '📅'],
+    ['plan', 'Planificar', '🗓️'],
+    ['compra', 'Compra', '🛒'],
+    ['alimentos', 'Alimentos', '🥗'],
+    ['buscador', 'Buscador', '🔎'],
+    ['recetas', 'Recetas', '📖'],
+    ['progreso', 'Peso', '⚖️'],
+    ['recordatorios', 'Avisos', '⏰'],
+    ['notas', 'Notas', '📝']
   ];
-  var currentView = 'hoy';
+  var currentView = 'inicio';
 
-  function nav() {
-    var el = document.getElementById('main-nav');
-    el.innerHTML = '';
-    NAV.forEach(function (p) {
-      var b = document.createElement('button');
-      b.textContent = p[1];
-      b.dataset.view = p[0];
-      if (p[0] === currentView) b.classList.add('active');
-      b.addEventListener('click', function () { showView(p[0]); });
-      el.appendChild(b);
+  function navHome() {
+    var btns = document.querySelectorAll('[data-gohome]');
+    Array.prototype.forEach.call(btns, function (b) {
+      b.hidden = (currentView === 'inicio');
     });
   }
 
@@ -84,8 +78,26 @@
     VIEWS.forEach(function (id) {
       document.getElementById('view-' + id).hidden = (id !== v);
     });
-    nav();
+    navHome();
     render(v);
+    window.scrollTo(0, 0);
+  }
+
+  function renderInicio() {
+    var el = document.getElementById('view-inicio');
+    var html = '<div class="home-hero"><h2>Menú</h2><p class="hint">Elige una opción para empezar</p></div>';
+    html += '<div class="home-grid">';
+    NAV.forEach(function (p) {
+      html += '<button type="button" class="home-card" data-home="' + p[0] + '">';
+      html += '<span class="home-ico">' + p[2] + '</span>';
+      html += '<span class="home-label">' + escapeHtml(p[1]) + '</span>';
+      html += '</button>';
+    });
+    html += '</div>';
+    el.innerHTML = html;
+    Array.prototype.forEach.call(el.querySelectorAll('.home-card[data-home]'), function (b) {
+      b.addEventListener('click', function () { showView(b.dataset.home); });
+    });
   }
 
   // ---------------------------------------------------------------
@@ -127,6 +139,7 @@
   // ---------------------------------------------------------------
   function render(v) {
     switch (v) {
+      case 'inicio': renderInicio(); break;
       case 'hoy': renderHoy(); break;
       case 'plan': renderPlan(); break;
       case 'compra': renderCompra(); break;
@@ -1002,8 +1015,10 @@
   // Init
   // ---------------------------------------------------------------
   function init() {
-    nav();
-    showView('hoy');
+    Array.prototype.forEach.call(document.querySelectorAll('[data-gohome]'), function (b) {
+      b.addEventListener('click', function () { showView('inicio'); });
+    });
+    showView('inicio');
     setInterval(checkRecordatorios, 30000);
   }
 
