@@ -51,11 +51,12 @@
   // ---------------------------------------------------------------
   // Navegación
   // ---------------------------------------------------------------
-  var VIEWS = ['hoy', 'plan', 'compra', 'buscador', 'recetas', 'progreso', 'recordatorios', 'notas'];
+  var VIEWS = ['hoy', 'plan', 'compra', 'alimentos', 'buscador', 'recetas', 'progreso', 'recordatorios', 'notas'];
   var NAV = [
     ['hoy', 'Hoy'],
     ['plan', 'Planificar'],
     ['compra', 'Compra'],
+    ['alimentos', 'Alimentos'],
     ['buscador', 'Buscador'],
     ['recetas', 'Recetas'],
     ['progreso', 'Peso'],
@@ -128,6 +129,7 @@
       case 'hoy': renderHoy(); break;
       case 'plan': renderPlan(); break;
       case 'compra': renderCompra(); break;
+      case 'alimentos': renderAlimentos(); break;
       case 'buscador': renderBuscador(); break;
       case 'recetas': renderRecetas(); break;
       case 'progreso': renderProgreso(); break;
@@ -349,13 +351,42 @@
   }
 
   // ---------- VISTA COMPRA ----------
+  // Palabras de preparación que no son el alimento en sí
+  var PREP_FRA = ['a la plancha', 'a la espalda', 'a la gallega', 'al ajillo', 'al vapor', 'al horno', 'a la brasa', 'a la romana', 'a la bechamel', 'en crudo', 'con pimentón', 'con salvado'];
+  var PREP_ADJ = '(rehogad|gratinad|cocid|asad|frit|crud|estofad|rebozad|empanad|saltead|macerad|ahumad|brasead|cocinad|guisad)[oa]s?';
+
+  function limpiarIngrediente(t) {
+    var s = t;
+    // quitar frases de preparación
+    PREP_FRA.forEach(function (p) {
+      s = s.replace(new RegExp('\\b' + p + '\\b', 'gi'), '');
+    });
+    // quitar adjetivos de preparación (asado, rehogado, gratinado...)
+    s = s.replace(new RegExp('\\b' + PREP_ADJ + '\\b', 'gi'), '');
+    // quitar continentes de plato tipo "crema de X", "ensalada de X", "sopa de X"
+    s = s.replace(/^(?:crema|ensalada|sopa|estofado|guiso|pur[eé]|picadillo|fritura(?:\s+\w+)?)\s+de\s+/gi, '');
+    // quitar "de/del" inicial (restos tipo "de arroz en crudo")
+    s = s.replace(/^(?:de|del)\s+/gi, '');
+    // quitar exclusiones: solo, al inicio o al final ("sin patatas", "lentejas sin patatas")
+    s = s.replace(/^sin\s+.*/gi, '');
+    s = s.replace(/\s+sin\s+.*$/gi, '');
+    // quitar partículas de medida ("un manojo", "medio kilo"... aunque no lleven "de")
+    s = s.replace(/^(?:un|una|unos|unas|medio|media)\s+(?:manojo|trozo|puñado|pedazo|punta|ramillete|pizca|cabeza|kilo|litro)\s*/gi, '');
+    // quitar número inicial (1 yogur, 2 huevos...)
+    s = s.replace(/^\d+\s*/gi, '');
+    // limpiar espacios
+    s = s.replace(/\s+/g, ' ').trim();
+    return s;
+  }
+
   function parseIngredientes(texto) {
     if (!texto) return [];
-    // separación por comas, puntos y "y" — lo más simple posible
+    // separación por comas, puntos, paréntesis y conjunciones (y/o/con/e/u)
+    // para aislar cada ingrediente de los platos compuestos
     var tokens = texto
       .replace(/\b\d+\s*(g|gr|kg|ml|unidades?|piezas?|tarrinas?)\b/gi, '')
-      .split(/[.,;()]+/)
-      .map(function (t) { return t.trim().toLowerCase(); })
+      .split(/(?:,|\.|;|\(|\)|\by\b|\bo\b|\bcon\b|\be\b|\bu\b)+/i)
+      .map(function (t) { return limpiarIngrediente(t.trim().toLowerCase()); })
       .filter(function (t) { return t.length >= 3; });
     return tokens;
   }
@@ -502,6 +533,80 @@
         if (li) li.classList.toggle('checked', cb.checked);
       });
     });
+  }
+
+  // ---------- VISTA ALIMENTOS ----------
+  var alimLetra = null; // letra seleccionada en el índice (null = todas)
+
+  function normAlim(s) {
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function primeraLetra(nombre) {
+    var ch = normAlim(nombre).trim().charAt(0).toUpperCase();
+    return /[A-Z]/.test(ch) ? ch : null;
+  }
+
+  function renderAlimentos() {
+    var el = document.getElementById('view-alimentos');
+    var html = '<div class="card"><h2>Alimentos de la dieta</h2>';
+    html += '<input type="text" id="alim-busq" placeholder="Buscar alimento (en cualquier parte del nombre)...">';
+    html += '</div>';
+
+    var letras = {};
+    DATA.alimentos.forEach(function (a) {
+      var l = primeraLetra(a.n);
+      if (l) letras[l] = true;
+    });
+    var lkeys = Object.keys(letras).sort();
+
+    html += '<div class="card"><div class="alpha-index">';
+    html += '<button data-letra=""' + (alimLetra === null ? ' class="active"' : '') + '>Todos</button>';
+    lkeys.forEach(function (l) {
+      html += '<button data-letra="' + l + '"' + (alimLetra === l ? ' class="active"' : '') + '>' + l + '</button>';
+    });
+    html += '</div></div>';
+    html += '<div class="card"><div id="alim-list"></div></div>';
+
+    el.innerHTML = html;
+
+    document.getElementById('alim-busq').addEventListener('input', pintarAlimentos);
+    Array.prototype.forEach.call(el.querySelectorAll('.alpha-index button[data-letra]'), function (b) {
+      b.addEventListener('click', function () {
+        alimLetra = b.dataset.letra === '' ? null : b.dataset.letra;
+        renderAlimentos();
+      });
+    });
+
+    pintarAlimentos();
+  }
+
+  function pintarAlimentos() {
+    var cont = document.getElementById('alim-list');
+    if (!cont) return;
+    var q = normAlim(document.getElementById('alim-busq').value);
+    var lista = DATA.alimentos.slice();
+    lista.sort(function (a, b) { return a.n.localeCompare(b.n, 'es'); });
+    var res = lista.filter(function (a) {
+      if (q) return normAlim(a.n).indexOf(q) !== -1;
+      if (alimLetra) return primeraLetra(a.n) === alimLetra;
+      return true;
+    });
+    if (!res.length) {
+      cont.innerHTML = '<p class="hint">Sin resultados.</p>';
+      return;
+    }
+    var html = '';
+    res.forEach(function (a) {
+      var tipoLabel = a.t === 'hidrato' ? 'Hidrato' : a.t === 'proteina' ? 'Proteína' : a.t === 'verdura' ? 'Verdura' : 'Fruta';
+      var badge = a.t === 'hidrato' ? 'hidrato' : a.t === 'proteina' ? 'proteina' : a.t === 'verdura' ? 'verdura' : 'fruta';
+      html += '<div class="alim-item">';
+      html += '<div><strong>' + escapeHtml(a.n) + '</strong>';
+      if (a.det) html += '<div class="cat">' + escapeHtml(a.det) + '</div>';
+      html += '</div><span class="badge ' + badge + '">' + tipoLabel + '</span>';
+      html += '</div>';
+    });
+    cont.innerHTML = html;
   }
 
   // ---------- VISTA BUSCADOR ----------

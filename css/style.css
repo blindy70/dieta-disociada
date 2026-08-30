@@ -203,3 +203,38 @@ canvas#weightChart { width: 100%; max-width: 100%; }
 .alert-msg { color: var(--danger); font-size: 13px; }
 
 .success-msg { color: var(--primary-dark); font-size: 13px; }
+
+.alpha-index {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.alpha-index button {
+  min-width: 34px;
+  padding: 6px 4px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.alpha-index button:hover { background: var(--bg); }
+.alpha-index button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.alim-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.alim-item:last-child { border-bottom: none; }
+.alim-item .cat { color: var(--muted); font-size: 13px; }
+.alim-item .badge { white-space: nowrap; }
