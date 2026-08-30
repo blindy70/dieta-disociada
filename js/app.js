@@ -437,12 +437,37 @@
     if (fase.tipo === 'clasica') {
       var s = getSemana(fase, pa.semana != null ? pa.semana : state.plan.semana);
       var d = pa.dia || 1;
-      textos.push(s.desayunoBase, s.mediaMananaBase, s.comidas[d - 1], s.meriendaBase, s.cenas[d - 1]);
+      textos.push(resolverIgual(s.desayunoBase, fase, s.semana, d, 'desayunoBase'));
+      textos.push(resolverIgual(s.mediaMananaBase, fase, s.semana, d, 'mediaMananaBase'));
+      textos.push(s.comidas[d - 1]);
+      textos.push(resolverIgual(s.meriendaBase, fase, s.semana, d, 'meriendaBase'));
+      textos.push(s.cenas[d - 1]);
     } else if (fase.tipo === 'desintoxicante') {
       var d2 = fase.dias.find(function (x) { return x.n === (pa.dia || 1); }) || fase.dias[0];
-      textos.push(d2.desayuno, d2.mediaManana, d2.comida, d2.merienda, d2.cena);
+      var dn = d2.n;
+      textos.push(resolverIgual(d2.desayuno, fase, null, dn, 'desayuno'));
+      textos.push(resolverIgual(d2.mediaManana, fase, null, dn, 'mediaManana'));
+      textos.push(d2.comida);
+      textos.push(d2.merienda);
+      textos.push(d2.cena);
     }
     return textos.filter(Boolean);
+  }
+
+  // Resuelve textos-placeholder del tipo "Igual que la semana anterior." /
+  // "Igual que el anterior." reemplazándolos por el alimento real del periodo
+  // al que hacen referencia (semana/día anterior del mismo hueco).
+  function resolverIgual(texto, fase, semana, dia, slot) {
+    if (!texto || String(texto).trim().toLowerCase().indexOf('igual que') !== 0) return texto;
+    var resolved = null;
+    if (fase.tipo === 'clasica' && semana > 1) {
+      var prev = getSemana(fase, semana - 1);
+      if (prev && prev[slot]) resolved = resolverIgual(prev[slot], fase, semana - 1, dia, slot);
+    } else if (fase.tipo === 'desintoxicante' && dia > 1) {
+      var pd = fase.dias.find(function (x) { return x.n === (dia - 1); });
+      if (pd && pd[slot]) resolved = resolverIgual(pd[slot], fase, null, dia - 1, slot);
+    }
+    return resolved || texto;
   }
 
   function renderCompra() {
