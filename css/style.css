@@ -196,6 +196,19 @@ select, input[type="text"], input[type="number"], input[type="date"], input[type
 
 .checklist-item.checked span { text-decoration: line-through; color: var(--muted); }
 
+.checklist-item .qty {
+  margin-left: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  white-space: nowrap;
+}
+.checklist-item.checked .qty { color: var(--muted); }
+
 .search-result {
   padding: 8px;
   border: 1px solid var(--border);

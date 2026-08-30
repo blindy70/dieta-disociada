@@ -556,9 +556,11 @@
     }
     keys.sort().forEach(function (k) {
       var done = !!state.compraDone[k];
+      var veces = items[k] || 0;
       html += '<div class="checklist-item' + (done ? ' checked' : '') + '">';
       html += '<input type="checkbox" data-item="' + escapeAttr(k) + '"' + (done ? ' checked' : '') + '>';
       html += '<span>' + escapeHtml(k) + '</span>';
+      html += '<span class="qty" title="Veces que aparece en la dieta seleccionada">' + veces + '×</span>';
       html += '</div>';
     });
     html += '<p class="hint">Marca los ingredientes a medida que los compras. La lista se guarda en este dispositivo.</p>';
