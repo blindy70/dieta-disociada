@@ -369,6 +369,10 @@
   var PREP_FRA = ['a la plancha', 'a la espalda', 'a la gallega', 'al ajillo', 'al vapor', 'al horno', 'a la brasa', 'a la romana', 'a la bechamel', 'en crudo', 'con pimentón', 'con salvado'];
   var PREP_ADJ = '(rehogad|gratinad|cocid|asad|frit|crud|estofad|rebozad|empanad|saltead|macerad|ahumad|brasead|cocinad|guisad)[oa]s?';
 
+  // Selección efímera de "lo que hay que comprar" (no se persiste).
+  // Clave = alimento, valor = true si está marcado para comprar.
+  var selCompra = {};
+
   function limpiarIngrediente(t) {
     var s = t;
     // quitar frases de preparación
@@ -567,39 +571,122 @@
 
     state.compra = { fase: fid, dias: pa.dias, items: items };
     save();
+    selCompra = {};
     pintarCompra(items);
   }
 
   function pintarCompra(items) {
     var cont = document.getElementById('compra-result');
     var html = '<h2>Lista generada (' + escapeHtml(String(state.compra.dias || '')) + ')</h2>';
-    var keys = Object.keys(items || {});
+    var keys = Object.keys(items || {}).sort();
     if (!keys.length) {
       html += '<p class="hint">No se pudieron extraer ingredientes automáticamente. Revisa la semana desde la vista Planificar.</p>';
       cont.innerHTML = html;
       return;
     }
-    keys.sort().forEach(function (k) {
-      var done = !!state.compraDone[k];
+    var selCount = 0;
+    keys.forEach(function (k) {
+      var sel = !!selCompra[k];
       var veces = items[k] || 0;
-      html += '<div class="checklist-item' + (done ? ' checked' : '') + '">';
-      html += '<input type="checkbox" data-item="' + escapeAttr(k) + '"' + (done ? ' checked' : '') + '>';
+      if (sel) selCount++;
+      html += '<div class="checklist-item' + (sel ? ' checked' : '') + '">';
+      html += '<input type="checkbox" data-item="' + escapeAttr(k) + '"' + (sel ? ' checked' : '') + '>';
       html += '<span class="qty" title="Veces que aparece en la dieta seleccionada">' + veces + '×</span>';
       html += '<span>' + escapeHtml(k) + '</span>';
       html += '</div>';
     });
-    html += '<p class="hint">Marca los ingredientes a medida que los compras. La lista se guarda en este dispositivo.</p>';
+    html += '<div class="field" style="margin-top:14px">';
+    html += '<button class="btn" id="compra-exportar"' + (selCount ? '' : ' disabled') + '>';
+    html += 'Exportar imagen (' + selCount + ' seleccionados)</button>';
+    html += '</div>';
+    html += '<p class="hint">Marca solo los alimentos que necesitas comprar porque no los tienes en casa. La selección no se guarda; exporta la imagen para llevar al supermercado.</p>';
     cont.innerHTML = html;
+
     Array.prototype.forEach.call(cont.querySelectorAll('[data-item]'), function (cb) {
       cb.addEventListener('change', function () {
         var k = cb.dataset.item;
-        if (cb.checked) state.compraDone[k] = true;
-        else delete state.compraDone[k];
-        save();
+        if (cb.checked) selCompra[k] = true;
+        else delete selCompra[k];
         var li = cb.closest('.checklist-item');
         if (li) li.classList.toggle('checked', cb.checked);
+        // actualizar contador y estado del botón de exportación
+        var n = Object.keys(selCompra).length;
+        var btn = document.getElementById('compra-exportar');
+        if (btn) {
+          btn.disabled = !n;
+          btn.textContent = 'Exportar imagen (' + n + ' seleccionados)';
+        }
       });
     });
+    var exBtn = document.getElementById('compra-exportar');
+    if (exBtn) {
+      exBtn.addEventListener('click', function () { exportarListaImagen(items); });
+    }
+  }
+
+  // Construye un PNG con los alimentos seleccionados y su contador y lo descarga.
+  function exportarListaImagen(items) {
+    var seleccionados = Object.keys(selCompra).sort().filter(function (k) { return selCompra[k]; });
+    if (!seleccionados.length) return;
+    var SCALE = 2;
+    var W = 900, pad = 40, rowH = 62, headerH = 140;
+    var H = headerH + seleccionados.length * rowH + 40;
+    var canvas = document.createElement('canvas');
+    canvas.width = W * SCALE;
+    canvas.height = H * SCALE;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(SCALE, SCALE);
+
+    // fondo blanco con borde redondeado
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+
+    // cabecera
+    ctx.fillStyle = '#2d6a4f';
+    ctx.fillRect(0, 0, W, headerH);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 40px Arial, sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Lista de la compra', pad, 52);
+    ctx.font = '24px Arial, sans-serif';
+    var sub = 'Alimentos a comprar en el ' + (String(state.compra.dias || 'periodo') + '').toLowerCase();
+    ctx.fillStyle = '#eef7f1';
+    ctx.fillText(sub, pad, 100);
+
+    // filas
+    var y = headerH + rowH * 0.5;
+    seleccionados.forEach(function (k) {
+      // cuadro de marca
+      ctx.strokeStyle = '#333333';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(pad, y - 18, 30, 30);
+      // nombre
+      ctx.fillStyle = '#222222';
+      ctx.font = '28px Arial, sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(primeraLetraMayus(k), pad + 48, y);
+      // contador
+      var veces = items[k] || 0;
+      var txt = veces + '×';
+      ctx.fillStyle = '#2d6a4f';
+      ctx.font = 'bold 30px Arial, sans-serif';
+      var tw = ctx.measureText(txt).width;
+      ctx.fillText(txt, W - pad - tw, y);
+      y += rowH;
+    });
+
+    var dataUrl = canvas.toDataURL('image/png');
+    var a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'lista-compra.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function primeraLetraMayus(s) {
+    s = String(s || '');
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
   }
 
   // ---------- VISTA ALIMENTOS ----------

@@ -194,7 +194,14 @@ select, input[type="text"], input[type="number"], input[type="date"], input[type
 
 .checklist-item .cat { color: var(--muted); font-size: 13px; }
 
-.checklist-item.checked span { text-decoration: line-through; color: var(--muted); }
+.checklist-item.checked {
+  background: var(--primary);
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 8px;
+  border-bottom-color: transparent;
+}
+.checklist-item.checked span { color: #fff; }
 
 .checklist-item .qty {
   background: var(--bg);
@@ -208,7 +215,11 @@ select, input[type="text"], input[type="number"], input[type="date"], input[type
   align-self: flex-start;
   margin-top: 1px;
 }
-.checklist-item.checked .qty { color: var(--muted); }
+.checklist-item.checked .qty {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: transparent;
+  color: #fff;
+}
 
 .search-result {
   padding: 8px;
