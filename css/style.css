@@ -238,3 +238,46 @@ canvas#weightChart { width: 100%; max-width: 100%; }
 .alim-item:last-child { border-bottom: none; }
 .alim-item .cat { color: var(--muted); font-size: 13px; }
 .alim-item .badge { white-space: nowrap; }
+
+.alim-item { flex-wrap: wrap; }
+.alim-actions { display: flex; align-items: center; gap: 8px; }
+.alim-info { min-width: 0; }
+
+button.wrench {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--muted);
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+button.wrench:hover { color: var(--primary); border-color: var(--primary); }
+button.wrench.substituted { color: #fff; background: var(--primary); border-color: var(--primary); }
+
+.alim-item .orig-name {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  text-decoration: line-through;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+.sub-editor {
+  flex-basis: 100%;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 6px;
+}
+.sub-editor .field { display: block; margin-bottom: 8px; }
+.sub-editor .field input { width: 100%; }
+.sub-editor .btn.small { font-size: 13px; padding: 6px 12px; }
