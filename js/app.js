@@ -66,19 +66,11 @@
   ];
   var currentView = 'inicio';
 
-  function navHome() {
-    var btns = document.querySelectorAll('[data-gohome]');
-    Array.prototype.forEach.call(btns, function (b) {
-      b.hidden = (currentView === 'inicio');
-    });
-  }
-
   function showView(v) {
     currentView = v;
     VIEWS.forEach(function (id) {
       document.getElementById('view-' + id).hidden = (id !== v);
     });
-    navHome();
     render(v);
     window.scrollTo(0, 0);
   }
@@ -149,6 +141,15 @@
       case 'progreso': renderProgreso(); break;
       case 'recordatorios': renderRecordatorios(); break;
       case 'notas': renderNotas(); break;
+    }
+    if (v !== 'inicio') {
+      var sec = document.getElementById('view-' + v);
+      var foot = document.createElement('div');
+      foot.className = 'view-footer';
+      foot.innerHTML = '<button type="button" class="home-back-btn">← Volver al menú principal</button>';
+      sec.appendChild(foot);
+      var btn = foot.querySelector('.home-back-btn');
+      btn.addEventListener('click', function () { showView('inicio'); });
     }
   }
 
@@ -1129,9 +1130,6 @@
   // Init
   // ---------------------------------------------------------------
   function init() {
-    Array.prototype.forEach.call(document.querySelectorAll('[data-gohome]'), function (b) {
-      b.addEventListener('click', function () { showView('inicio'); });
-    });
     showView('inicio');
     setInterval(checkRecordatorios, 30000);
   }
