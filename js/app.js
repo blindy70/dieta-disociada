@@ -66,19 +66,28 @@
   ];
   var currentView = 'inicio';
 
+  function tituloSeccion(v) {
+    if (v === 'inicio') return 'Menú';
+    for (var i = 0; i < NAV.length; i++) {
+      if (NAV[i][0] === v) return NAV[i][1];
+    }
+    return v;
+  }
+
   function showView(v) {
     currentView = v;
     VIEWS.forEach(function (id) {
       document.getElementById('view-' + id).hidden = (id !== v);
     });
+    var ht = document.getElementById('header-titulo');
+    if (ht) ht.textContent = tituloSeccion(v);
     render(v);
     window.scrollTo(0, 0);
   }
 
   function renderInicio() {
     var el = document.getElementById('view-inicio');
-    var html = '<div class="home-hero"><h2>Menú</h2><p class="hint">Elige una opción para empezar</p></div>';
-    html += '<div class="home-grid">';
+    var html = '<div class="home-grid">';
     NAV.forEach(function (p) {
       html += '<button type="button" class="home-card" data-home="' + p[0] + '">';
       html += '<span class="home-ico">' + p[2] + '</span>';
