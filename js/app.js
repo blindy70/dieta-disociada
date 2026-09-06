@@ -380,8 +380,36 @@
   var PREP_ADJ = '(rehogad|gratinad|cocid|asad|frit|crud|estofad|rebozad|empanad|saltead|macerad|ahumad|brasead|cocinad|guisad)[oa]s?';
 
   // Selección efímera de "lo que hay que comprar" (no se persiste).
-  // Clave = alimento, valor = true si está marcado para comprar.
+  // Clave = alimento, valor = cantidad a comprar si está marcado.
   var selCompra = {};
+
+  // Palabras cuyo plural no se deduce con las reglas genéricas
+  // (rompen la terminación o cambian la tilde). Mapa: plural -> singular.
+  var IRREG_SINGULAR = {
+    'tomates': 'tomate', 'entremeses': 'entremés', 'guisantes': 'guisante',
+    'tallarines': 'tallarín', 'brotes': 'brote', 'carnes': 'carne',
+    'biscotes': 'biscote', 'verdes': 'verde', 'acostumbres': 'acostumbre',
+    'puedes': 'puede', 'filetes': 'filete'
+  };
+
+  // Unifica en un solo alimento las variantes que son lo mismo:
+  //  - quita los adjetivos de variedad ("verduras variadas" -> "verduras")
+  //  - pasa los plurales a singular ("huevos" -> "huevo", "champiñones" -> "champiñón")
+  function singularizarAlimento(t) {
+    return String(t || '').split(' ').map(function (w) {
+      if (w === 'variadas' || w === 'variados' || w === 'variada' || w === 'variado') return '';
+      if (IRREG_SINGULAR[w]) return IRREG_SINGULAR[w];
+      var ln = w.length;
+      if (ln < 4 || w.charAt(ln - 1) !== 's') return w;
+      if (w.slice(-2) === 'es') {
+        if (/siones$/.test(w)) return w.slice(0, -6) + 'sión';
+        if (/ciones$/.test(w)) return w.slice(0, -6) + 'ción';
+        if (/ones$/.test(w)) return w.slice(0, -4) + 'ón';
+        return w.slice(0, -2);
+      }
+      return w.slice(0, -1);
+    }).filter(Boolean).join(' ');
+  }
 
   function limpiarIngrediente(t) {
     var s = t;
@@ -404,7 +432,8 @@
     s = s.replace(/^\d+\s*/gi, '');
     // limpiar espacios
     s = s.replace(/\s+/g, ' ').trim();
-    return s;
+    // unificar variantes del mismo alimento (plural y adjetivos de variedad)
+    return singularizarAlimento(s);
   }
 
   function parseIngredientes(texto) {
