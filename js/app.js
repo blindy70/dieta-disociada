@@ -563,7 +563,9 @@
 
     html += '<button class="btn" id="compra-generar">Generar lista</button>';
     html += '<button class="btn secondary" id="compra-limpiar">Vaciar</button>';
+    html += '<button class="btn secondary" id="compra-ver-menu">Ver menú del periodo</button>';
     html += '</div>';
+    html += '<div id="compra-menu" hidden></div>';
     html += '<div class="card"><div id="compra-result"></div></div>';
 
     el.innerHTML = html;
@@ -581,6 +583,75 @@
       save();
       renderCompra();
     });
+
+    var verBtn = document.getElementById('compra-ver-menu');
+    var menuWrap = document.getElementById('compra-menu');
+    if (verBtn && menuWrap) {
+      verBtn.addEventListener('click', function () {
+        if (menuWrap.hidden) {
+          menuWrap.innerHTML = menuDelPeriodo();
+          bindMenuActions(menuWrap);
+          menuWrap.hidden = false;
+          verBtn.textContent = 'Ocultar menú';
+        } else {
+          menuWrap.hidden = true;
+          verBtn.textContent = 'Ver menú del periodo';
+        }
+      });
+    }
+  }
+
+  // Construye el menú (todas las comidas del día) del periodo seleccionado en
+  // la vista de compra, para tenerlo a mano al decidir los alimentos a comprar.
+  // Resuelve los textos "Igual que..." igual que la generación de la lista
+  // (textosDelPlan), de modo que el menú muestre exactamente lo que se compra.
+  function menuDelPeriodo() {
+    var fid = document.getElementById('compra-fase').value;
+    var fase = getFase(fid);
+    var dias = [];
+    if (fase.tipo === 'clasica') {
+      var semId = parseInt(document.getElementById('compra-semana').value, 10);
+      var s = getSemana(fase, semId);
+      var alcance = document.getElementById('compra-dias').value;
+      var rango = alcance === 'semana' ? [1, 2, 3, 4, 5, 6, 7] : [state.plan.dia || 1];
+      rango.forEach(function (d) {
+        dias.push({
+          titulo: 'Día ' + d + ' — ' + s.titulo,
+          fase: fid, semana: semId, dia: d,
+          slots: [
+            ['desayuno', resolverIgual(s.desayunoBase, fase, semId, d, 'desayunoBase')],
+            ['mediaManana', resolverIgual(s.mediaMananaBase, fase, semId, d, 'mediaMananaBase')],
+            ['comida', s.comidas[d - 1]],
+            ['merienda', resolverIgual(s.meriendaBase, fase, semId, d, 'meriendaBase')],
+            ['cena', s.cenas[d - 1]]
+          ]
+        });
+      });
+    } else if (fase.tipo === 'desintoxicante') {
+      var alc = document.getElementById('compra-dias-des').value;
+      var rangoDes = alc === 'ciclo' ? [1, 2, 3, 4, 5, 6, 7] : [state.plan.dia || 1];
+      rangoDes.forEach(function (dd) {
+        var d = fase.dias.find(function (x) { return x.n === dd; }) || fase.dias[0];
+        dias.push({
+          titulo: 'Día ' + d.n,
+          fase: fid, semana: 0, dia: d.n,
+          slots: [
+            ['desayuno', resolverIgual(d.desayuno, fase, null, d.n, 'desayuno')],
+            ['mediaManana', resolverIgual(d.mediaManana, fase, null, d.n, 'mediaManana')],
+            ['comida', d.comida],
+            ['merienda', d.merienda],
+            ['cena', d.cena]
+          ]
+        });
+      });
+    } else {
+      return '<p class="hint">La fase de mantenimiento no define un menú semanal.</p>';
+    }
+    var html = '';
+    dias.forEach(function (day) {
+      html += menuCard(day.titulo, day.slots, day.fase, day.semana, day.dia);
+    });
+    return html;
   }
 
   function generarLista() {
