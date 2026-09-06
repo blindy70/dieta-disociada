@@ -598,36 +598,66 @@
     keys.forEach(function (k) {
       var sel = !!selCompra[k];
       var veces = items[k] || 0;
+      var qty = sel ? (selCompra[k] || veces) : veces;
       if (sel) selCount++;
       html += '<div class="checklist-item' + (sel ? ' checked' : '') + '">';
       html += '<input type="checkbox" data-item="' + escapeAttr(k) + '"' + (sel ? ' checked' : '') + '>';
+      html += '<span class="compra-qty-wrap">';
+      html += '<span class="compra-qty-lbl">comprar</span>';
+      html += '<input type="number" min="1" step="1" class="compra-qty" data-qty="' + escapeAttr(k) + '" value="' + qty + '" title="Cantidad exacta a comprar"' + (sel ? '' : ' disabled') + '>';
+      html += '</span>';
+      html += '<span class="compra-nombre">' + escapeHtml(k) + '</span>';
       html += '<span class="qty" title="Veces que aparece en la dieta seleccionada">' + veces + '×</span>';
-      html += '<span>' + escapeHtml(k) + '</span>';
       html += '</div>';
     });
     html += '<div class="field" style="margin-top:14px">';
     html += '<button class="btn" id="compra-exportar"' + (selCount ? '' : ' disabled') + '>';
     html += 'Exportar imagen (' + selCount + ' seleccionados)</button>';
     html += '</div>';
-    html += '<p class="hint">Marca solo los alimentos que necesitas comprar porque no los tienes en casa. La selección no se guarda; exporta la imagen para llevar al supermercado.</p>';
+    html += '<p class="hint">Marca solo los alimentos que necesitas comprar porque no los tienes en casa. Ajusta la cantidad de cada uno antes de exportar. La selección no se guarda; exporta la imagen para llevar al supermercado.</p>';
     cont.innerHTML = html;
 
-    Array.prototype.forEach.call(cont.querySelectorAll('[data-item]'), function (cb) {
+    function actualizarBotonExportar() {
+      var n = Object.keys(selCompra).length;
+      var btn = document.getElementById('compra-exportar');
+      if (btn) {
+        btn.disabled = !n;
+        btn.textContent = 'Exportar imagen (' + n + ' seleccionados)';
+      }
+    }
+
+    Array.prototype.forEach.call(cont.querySelectorAll('input[type="checkbox"][data-item]'), function (cb) {
       cb.addEventListener('change', function () {
         var k = cb.dataset.item;
-        if (cb.checked) selCompra[k] = true;
-        else delete selCompra[k];
         var li = cb.closest('.checklist-item');
-        if (li) li.classList.toggle('checked', cb.checked);
-        // actualizar contador y estado del botón de exportación
-        var n = Object.keys(selCompra).length;
-        var btn = document.getElementById('compra-exportar');
-        if (btn) {
-          btn.disabled = !n;
-          btn.textContent = 'Exportar imagen (' + n + ' seleccionados)';
+        var qty = li ? li.querySelector('.compra-qty') : null;
+        if (cb.checked) {
+          // al marcar, la cantidad sugerida es la de veces que aparece en la dieta
+          selCompra[k] = items[k] || 1;
+          if (qty) {
+            qty.disabled = false;
+            qty.value = selCompra[k];
+          }
+        } else {
+          delete selCompra[k];
+          if (qty) qty.disabled = true;
         }
+        if (li) li.classList.toggle('checked', cb.checked);
+        actualizarBotonExportar();
       });
     });
+
+    Array.prototype.forEach.call(cont.querySelectorAll('.compra-qty'), function (q) {
+      q.addEventListener('change', function () {
+        var k = q.dataset.qty;
+        if (!k) return;
+        var v = parseInt(q.value, 10);
+        if (isNaN(v) || v < 1) v = 1;
+        q.value = v;
+        selCompra[k] = v;
+      });
+    });
+
     var exBtn = document.getElementById('compra-exportar');
     if (exBtn) {
       exBtn.addEventListener('click', function () { exportarListaImagen(items); });
@@ -675,13 +705,22 @@
       ctx.font = '28px Arial, sans-serif';
       ctx.textBaseline = 'middle';
       ctx.fillText(primeraLetraMayus(k), pad + 48, y);
-      // contador
-      var veces = items[k] || 0;
-      var txt = veces + '×';
+      // cantidad a comprar (la que el usuario ha ajustado)
+      var qty = selCompra[k] || 0;
+      var txt = qty + '×';
       ctx.fillStyle = '#2d6a4f';
       ctx.font = 'bold 30px Arial, sans-serif';
       var tw = ctx.measureText(txt).width;
-      ctx.fillText(txt, W - pad - tw, y);
+      ctx.fillText(txt, W - pad - tw, y - 8);
+      // referencia a las veces que aparece en la dieta si difiere de la cantidad
+      var veces = items[k] || 0;
+      if (veces && veces !== qty) {
+        var ref = 'en plan: ' + veces + '×';
+        ctx.font = '15px Arial, sans-serif';
+        ctx.fillStyle = '#888888';
+        var rw = ctx.measureText(ref).width;
+        ctx.fillText(ref, W - pad - rw, y + 18);
+      }
       y += rowH;
     });
 

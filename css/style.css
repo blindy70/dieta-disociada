@@ -218,6 +218,40 @@ select, input[type="text"], input[type="number"], input[type="date"], input[type
   color: #fff;
 }
 
+.compra-qty-wrap {
+  display: none;
+  align-items: center;
+  gap: 5px;
+}
+.checklist-item.checked .compra-qty-wrap { display: inline-flex; }
+.compra-qty {
+  width: 56px;
+  padding: 3px 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  background: var(--bg);
+  color: var(--text);
+  -moz-appearance: textfield;
+}
+.compra-qty::-webkit-outer-spin-button,
+.compra-qty::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.checklist-item.checked .compra-qty {
+  background: #fff;
+  border-color: transparent;
+}
+.compra-qty-lbl {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+}
+.checklist-item .compra-nombre { flex: 1; min-width: 0; }
+
 .search-result {
   padding: 8px;
   border: 1px solid var(--border);
