@@ -389,7 +389,7 @@
     'tomates': 'tomate', 'entremeses': 'entremés', 'guisantes': 'guisante',
     'tallarines': 'tallarín', 'brotes': 'brote', 'carnes': 'carne',
     'biscotes': 'biscote', 'verdes': 'verde', 'acostumbres': 'acostumbre',
-    'puedes': 'puede', 'filetes': 'filete'
+    'puedes': 'puede', 'filetes': 'filete', 'burgos': 'burgos'
   };
 
   // Unifica en un solo alimento las variantes que son lo mismo:
@@ -411,6 +411,32 @@
     }).filter(Boolean).join(' ');
   }
 
+  // Unifica alimentos genéricos y sus variantes específicas ("queso" y
+  // "queso de burgos", "yogur" y "yogur natural desnatado"): cuando un
+  // alimento es el principio exacto de otro, se conserva el más específico
+  // (el más largo) y se le suman las veces del genérico.
+  function unificarSubtipos(items) {
+    var keys = Object.keys(items).sort(function (a, b) {
+      return (b.length - a.length) || (a < b ? -1 : 1);
+    });
+    var canon = [];
+    var out = {};
+    keys.forEach(function (k) {
+      var i;
+      for (i = 0; i < canon.length; i++) {
+        // el genérico debe ser el principio del específico seguido de espacio:
+        // "queso" -> "queso de burgos", pero no "sal" -> "salchicha"
+        if (canon[i].indexOf(k) === 0 && canon[i].charAt(k.length) === ' ') {
+          out[canon[i]] = (out[canon[i]] || 0) + items[k];
+          return;
+        }
+      }
+      canon.push(k);
+      out[k] = items[k];
+    });
+    return out;
+  }
+
   function limpiarIngrediente(t) {
     var s = t;
     // quitar frases de preparación
@@ -421,8 +447,6 @@
     s = s.replace(new RegExp('\\b' + PREP_ADJ + '\\b', 'gi'), '');
     // quitar continentes de plato tipo "crema de X", "ensalada de X", "sopa de X"
     s = s.replace(/^(?:crema|ensalada|sopa|estofado|guiso|pur[eé]|picadillo|fritura(?:\s+\w+)?)\s+de\s+/gi, '');
-    // quitar "de/del" inicial (restos tipo "de arroz en crudo")
-    s = s.replace(/^(?:de|del)\s+/gi, '');
     // quitar exclusiones: solo, al inicio o al final ("sin patatas", "lentejas sin patatas")
     s = s.replace(/^sin\s+.*/gi, '');
     s = s.replace(/\s+sin\s+.*$/gi, '');
@@ -432,6 +456,9 @@
     s = s.replace(/^\d+\s*/gi, '');
     // limpiar espacios
     s = s.replace(/\s+/g, ' ').trim();
+    // quitar "de/del" inicial (restos tipo "de arroz en crudo", "de ternera"
+    // tras eliminar "estofado", o "de jamón" tras "una punta de jamón")
+    s = s.replace(/^(?:de|del)\s+/gi, '');
     // unificar variantes del mismo alimento (plural y adjetivos de variedad)
     return singularizarAlimento(s);
   }
@@ -440,11 +467,11 @@
     if (!texto) return [];
     // aplicar sustituciones de alimentos antes de extraer
     texto = aplicarSustituciones(texto);
-    // separación por comas, puntos, paréntesis y conjunciones (y/o/con/e/u)
-    // para aislar cada ingrediente de los platos compuestos
+    // separación por comas, puntos, paréntesis, signo más y conjunciones
+    // (y/o/con/e/u) para aislar cada ingrediente de los platos compuestos
     var tokens = texto
       .replace(/\b\d+\s*(g|gr|kg|ml|unidades?|piezas?|tarrinas?)\b/gi, '')
-      .split(/(?:,|\.|;|\(|\)|\by\b|\bo\b|\bcon\b|\be\b|\bu\b)+/i)
+      .split(/(?:,|\.|;|\(|\)|\+|\by\b|\bo\b|\bcon\b|\be\b|\bu\b)+/i)
       .map(function (t) { return limpiarIngrediente(t.trim().toLowerCase()); })
       .filter(function (t) { return t.length >= 3; });
     return tokens;
@@ -599,7 +626,7 @@
       pa.textos = [];
     }
 
-    // Generar items únicos
+    // Generar items únicos y unificar variantes del mismo alimento
     var items = {};
     pa.textos.forEach(function (t) {
       parseIngredientes(t).forEach(function (ing) {
@@ -607,6 +634,7 @@
         items[ing]++;
       });
     });
+    items = unificarSubtipos(items);
 
     state.compra = { fase: fid, dias: pa.dias, items: items };
     save();
